@@ -1,0 +1,122 @@
+<template>
+  <div class="d-flex align-items-center flex-column">
+    <div class="d-flex flex-column align-items-center w-50">
+      <div class="d-flex">
+        <h3 class="mt-2"> {{$t('Treasury.partneredProjects')}} </h3>
+        <b-icon-question-circle class="h3 mt-2 ml-3 pointer" @click="openFormulaDetails"/>
+      </div>
+      <img src="../assets/divider4.png" class="expander-divider" alt="">
+    </div>
+    <div class="d-flex w-100 align-items-baseline mt-3">
+      <h5>{{$t('Treasury.payoutCurrency')}}:</h5>
+      <b-form-select class="w-25 ml-1" size="sm" :value="payoutCurrencyId" @change="updatePayoutCurrencyId($event)">
+        <b-form-select-option v-for="p in this.getPartnerProjects" :key="p.id" :value="p.id">{{p.tokenSymbol}} ({{p.name}})</b-form-select-option>
+      </b-form-select>
+    </div>
+    <div class="d-flex w-100 pt-2 pb-2 flex-wrap projects-container">
+      <PartneredProject v-for="partnerProject in this.getPartnerProjects" :key="partnerProject.id" :partnerProject="partnerProject" />
+    </div>
+    <b-modal ok-only class="centered-modal" ref="formula-details-modal" :title="$t('Treasury.formulaDetailsTitle')">
+      <span class="white-space">{{$t('Treasury.payoutFormulaExplanation')}}</span>
+    </b-modal>
+  </div>
+</template>
+
+<script lang='ts'>
+import PartneredProject from '@/components/PartneredProject.vue';
+import Vue from 'vue';
+import {Accessors} from 'vue/types/options';
+import {mapActions, mapGetters, mapMutations, mapState} from 'vuex';
+
+export interface SupportedProject {
+  id: number;
+  name: string;
+  tokenSymbol: string;
+  tokenAddress: string;
+  tokenSupply: number;
+  tokensClaimed: number;
+  tokenPrice: number;
+  isActive: boolean;
+  logo: string;
+  details: string;
+  website: string;
+  note: string;
+}
+
+interface StoreMappedTreasuryGetters {
+  getPartnerProjects: SupportedProject[];
+}
+
+interface StoreMappedState {
+  currentNetworkId: number;
+}
+
+interface StoreMappedTreasuryState {
+  payoutCurrencyId: string;
+}
+
+interface StoreMappedTreasuryActions {
+  fetchPartnerProjects(): Promise<void>;
+}
+
+interface Data {
+  updateInterval: ReturnType<typeof setInterval> | null;
+}
+
+export default Vue.extend({
+  components: { PartneredProject },
+
+  data() {
+    return {
+      updateInterval: null
+    } as Data;
+  },
+
+  computed: {
+    ...(mapGetters('treasury', ['getPartnerProjects']) as Accessors<StoreMappedTreasuryGetters>),
+    ...(mapState(['currentNetworkId']) as Accessors<StoreMappedState>),
+    ...(mapState('treasury',['payoutCurrencyId'])as Accessors<StoreMappedTreasuryState>),
+
+  },
+
+  methods: {
+    ...(mapActions('treasury',['fetchPartnerProjects']) as StoreMappedTreasuryActions),
+    ...mapMutations('treasury', ['updatePayoutCurrencyId']),
+
+    getLogoFile(projectName: string): string {
+      return `${projectName.toLowerCase()}.png`;
+    },
+
+    openFormulaDetails(): void {
+      (this.$refs['formula-details-modal'] as any).show();
+    }
+  },
+
+  async mounted() {
+    await this.fetchPartnerProjects();
+    this.updateInterval = setInterval(async () => {
+      await this.fetchPartnerProjects();
+    }, 3000);
+  },
+
+  beforeDestroy() {
+    if(this.updateInterval) {
+      clearInterval(this.updateInterval);
+    }
+  }
+
+});
+
+</script>
+
+<style scoped>
+.white-space {
+  white-space: break-spaces;
+}
+
+@media (max-width: 576px) {
+  .projects-container {
+    justify-content: center;
+  }
+}
+</style>

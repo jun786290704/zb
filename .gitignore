@@ -1,0 +1,17 @@
+build/
+build-*/
+node_modules/
+.openzeppelin/unknown-1337.json
+.openzeppelin/unknown-31337.json
+.netlify
+.env
+*.log
+report*.json
+.vscode/launch.json
+.vs
+.vscode
+public/abi
+cache
+artifacts
+.DS_Store
+.idea
